@@ -2,11 +2,51 @@ package gnet_client
 
 import (
 	"net"
+	"syscall"
 
 	"github.com/panjf2000/gnet/errors"
 	"golang.org/x/sys/unix"
 )
 
+func SocketConn(el *Eventloop, network string, address string) (c *conn, err error) {
+	switch network {
+	case "tcp", "tcp4", "tcp6":
+		sa, _, _, err := getTCPSockaddr(network, address)
+		if err != nil {
+			return nil, err
+		}
+		fd, err := unix.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
+		if err != nil {
+			return nil, err
+		}
+		err = unix.Connect(fd, sa)
+		if err != nil {
+			unix.Close(fd)
+			return nil, err
+		}
+		c = newTCPConn(fd, el, sa)
+		return c, err
+	case "udp", "udp4", "udp6":
+		sa, _, _, err := getUDPSockaddr(network, address)
+		if err != nil {
+			return nil, err
+		}
+		fd, err := unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, 0)
+		if err != nil {
+			return nil, err
+		}
+		err = unix.Connect(fd, sa)
+		if err != nil {
+			unix.Close(fd)
+			return nil, err
+		}
+		c = newUDPConn(fd, el, sa)
+		return c, err
+	default:
+		err = errors.ErrUnsupportedProtocol
+	}
+	return nil, err
+}
 func getTCPSockaddr(proto, addr string) (sa unix.Sockaddr, family int, tcpAddr *net.TCPAddr, err error) {
 	var tcpVersion string
 

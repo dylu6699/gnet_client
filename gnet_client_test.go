@@ -1,8 +1,6 @@
 package gnet_client
 
 import (
-	"fmt"
-	"net"
 	"strconv"
 	"testing"
 	"time"
@@ -36,28 +34,6 @@ func (s *testClient) OnClosed(c Conn, err error) (action gnet.Action) {
 		panic("invalid context")
 	}
 	return
-}
-
-func client(addr string, port int) {
-	if addr == "" || port == 0 {
-		gt.Logf("input params error addr:[%s] port:[%d]\n", addr, port)
-	}
-
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", addr, port))
-	defer conn.Close()
-	if err != nil {
-		gt.Logf("connected server [%s] faild err:%v\n", addr, err)
-		return
-	}
-	for {
-		n, err := conn.Write([]byte("My name is ldy"))
-		if err != nil {
-			gt.Logf("send data faild err:%v\n", err)
-		} else {
-			gt.Logf("send data length %d\n", n)
-		}
-		time.Sleep(1 * time.Second)
-	}
 }
 
 func TestClient(t *testing.T) {
